@@ -309,7 +309,7 @@
                         >
                             <Text
                                 id="_IDGenTextIssuedQty"
-                                text="Issued Qty"
+                                text="Issue Qty"
                             />
                         </Column>
 
