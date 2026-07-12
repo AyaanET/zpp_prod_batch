@@ -1,0 +1,29 @@
+<core:FragmentDefinition xmlns="sap.m" xmlns:core="sap.ui.core">
+    <TableSelectDialog id="_IDGenTableSelectDialog3"
+        title="Select Sales Order"
+        items="{/ZI_PLANTSALES_VH}"
+        confirm=".onToSalesOrderVHConfirm" 
+        contentWidth="600px"         
+        contentHeight="400px"
+        search=".onToSalesOrderVHSearch"
+        rememberSelections="true"
+        >
+        
+        <ColumnListItem id="_IDGenColumnListItem2">
+            <cells>
+                <Text id="_IDGenText18" text="{SalesOrder}" />
+                <Text id="_IDGenText19" text="{Plant}" />
+            </cells>
+        </ColumnListItem>
+        
+        <columns>
+            <Column id="_IDGenColumnSalesOrder">
+                <header><Text id="_IDGenText20" text="Sales Order" /></header>
+            </Column>
+            <Column id="_IDGenColumn9">
+                <header><Text id="_IDGenText21" text="Plant" /></header>
+            </Column>
+        </columns>
+        
+    </TableSelectDialog>
+</core:FragmentDefinition>
