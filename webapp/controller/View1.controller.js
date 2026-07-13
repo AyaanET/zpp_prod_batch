@@ -552,6 +552,7 @@ sap.ui.define([
                     "StorlocTo": oBatch.toSloc,
                     "MatDes": oBatch.description,
                     "Plant": oSelection.plant,
+                    "PostingDate": sFormattedDate,
                     // "ToBatch": oBatch.batchTransfer || ""
                 };
             });
