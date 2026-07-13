@@ -263,6 +263,74 @@ sap.ui.define([
             }
         },
 
+        // ==========================================
+        // PRODUCTION ORDER VALUE HELP LOGIC
+        // ==========================================
+        
+        onProdOrderSuggest: function (oEvent) {
+            var sTerm = oEvent.getParameter("suggestValue");
+            var aFilters = [];
+
+            if (sTerm) {
+                // Allows searching while typing
+                aFilters.push(new Filter("ManufacturingOrder", FilterOperator.StartsWith, sTerm));
+            }
+            oEvent.getSource().getBinding("suggestionItems").filter(aFilters);
+        },
+
+        onProdOrderValueHelp: function (oEvent) {
+            var oView = this.getView();
+
+            if (!this._oProdOrdDialog) {
+                sap.ui.core.Fragment.load({
+                    id: oView.getId(),
+                    name: "zppprodbatch.view.ProdOrdVH", 
+                    controller: this
+                }).then(function (oDialog) {
+                    this._oProdOrdDialog = oDialog;
+                    oView.addDependent(this._oProdOrdDialog);
+                    
+                    this._oProdOrdDialog.open();
+                }.bind(this));
+            } else {
+                this._oProdOrdDialog.open();
+            }
+        },
+
+       onProdOrdVHSearch: function (oEvent) {
+            var sValue = oEvent.getParameter("value");
+            var aFilters = [];
+
+            if (sValue) {
+                // Group the filters and apply the OR condition
+                var oCombinedFilter = new Filter({
+                    filters: [
+                        new Filter("ManufacturingOrder", FilterOperator.Contains, sValue),
+                        new Filter("Material", FilterOperator.Contains, sValue),
+                        new Filter("ProductDescription", FilterOperator.Contains, sValue)
+                    ],
+                    and: false // This is the magic property! It means OR.
+                });
+                
+                aFilters.push(oCombinedFilter);
+            }
+            
+            oEvent.getSource().getBinding("items").filter(aFilters);
+        },
+
+        onProdOrdVHConfirm: function (oEvent) {
+            var oSelectedItem = oEvent.getParameter("selectedItem");
+            if (oSelectedItem) {
+                var sProdOrder = oSelectedItem.getCells()[0].getText();
+                
+                // Update the local JSON model
+                this.getView().getModel("local").setProperty("/selection/prodOrder", sProdOrder);
+                
+                // Trigger the existing function to fetch the header details automatically!
+                this.onProdOrderChange(); 
+            }
+        },
+
 
         _fetchBatchesInBackground: function (sPlant, sFromSloc, sSalesOrder, sSalesOrderItem, sProdOrder) {
             var oView = this.getView();
@@ -433,8 +501,31 @@ sap.ui.define([
             }
 
             if (aScannedBatches.length === 0) {
-                MessageBox.error(".");
+                MessageBox.error("There are no batches in the table to submit.");
                 return;
+            }
+
+            for (var i = 0; i < aScannedBatches.length; i++) {
+                var oBatch = aScannedBatches[i];
+                
+                var fQtyToTransfer = parseFloat(oBatch.qty) || 0;
+                var fPendingQty = parseFloat(oBatch.pendingQty) || 0;
+
+                if (fQtyToTransfer > fPendingQty) {
+                    MessageBox.error(
+                        "Error on Batch " + oBatch.batch + ":\n\n" +
+                        "Quantity to Transfer (" + fQtyToTransfer + ") cannot be greater than the Pending Quantity (" + fPendingQty + ")."
+                    );
+                    return; 
+                }
+
+                if (fQtyToTransfer <= 0) {
+                    MessageBox.error(
+                        "Error on Batch " + oBatch.batch + ":\n\n" +
+                        "Quantity to Transfer must be greater than zero."
+                    );
+                    return; 
+                }
             }
 
             var oDateFormat = DateFormat.getDateInstance({ pattern: "yyyy-MM-dd" });

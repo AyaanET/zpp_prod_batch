@@ -3,7 +3,7 @@
         title="Select Production Order"
         items="{/ZI_PRODORD_VH}"
         confirm=".onProdOrdVHConfirm" 
-        contentWidth="400px"         
+        contentWidth="600px"         
         contentHeight="400px"
         search=".onProdOrdVHSearch"
         rememberSelections="true">
@@ -11,12 +11,20 @@
         <ColumnListItem id="prodOrdColumnListItem">
             <cells>
                 <Text id="prodOrdTextVal" text="{ManufacturingOrder}" />
+                <Text id="prodOrdTextMat" text="{Material}" />
+                <Text id="prodOrdTextDesc" text="{ProductDescription}" />
             </cells>
         </ColumnListItem>
         
         <columns>
             <Column id="prodOrdCol">
                 <header><Text id="prodOrdColText" text="Production Order" /></header>
+            </Column>
+            <Column id="prodOrdColMat">
+                <header><Text id="prodOrdColTextMat" text="Material" /></header>
+            </Column>
+            <Column id="prodOrdColDesc">
+                <header><Text id="prodOrdColTextDesc" text="Description" /></header>
             </Column>
         </columns>
         
