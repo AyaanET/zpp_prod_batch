@@ -643,7 +643,7 @@ sap.ui.define([
             ];
 
             var mParameters = {
-                "$select": "ProductionOrder,Material,ProductDescription,Plant,StorageLocation,EntryUnit"
+                "$select": "Reservation,ReservationItem,ProductionOrder,Material,ProductDescription,Plant,StorageLocation,EntryUnit"
             };
 
             var oListBinding = oModel.bindList("/ZI_SET_COMP", null, null, aFilters, mParameters);
