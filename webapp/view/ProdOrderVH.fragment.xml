@@ -1,0 +1,32 @@
+<core:FragmentDefinition xmlns="sap.m" xmlns:core="sap.ui.core">
+    <TableSelectDialog id="_IDGenTableSelectDialog4"
+        title="Select Production Order"
+        items="{/ZI_PRODORDER_VH}"
+        confirm=".onProdOrdVHConfirm" 
+        contentWidth="600px"         
+        contentHeight="400px"
+        search=".onProdOrdVHSearch"
+        rememberSelections="true">
+        
+        <ColumnListItem id="_IDGenColumnListItem5">
+            <cells>
+                <Text id="_IDGenText40" text="{ManufacturingOrder}" />
+                <Text id="_IDGenText41" text="{Material}" />
+                <Text id="_IDGenText42" text="{ProductDescription}" />
+            </cells>
+        </ColumnListItem>
+        
+        <columns>
+            <Column id="_IDGenColumn18">
+                <header><Text id="_IDGenText43" text="Production Order" /></header>
+            </Column>
+            <Column id="_IDGenColumn19">
+                <header><Text id="_IDGenText44" text="Material" /></header>
+            </Column>
+            <Column id="_IDGenColumn20">
+                <header><Text id="_IDGenText45" text="Description" /></header>
+            </Column>
+        </columns>
+        
+    </TableSelectDialog>
+</core:FragmentDefinition>

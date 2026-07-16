@@ -25,26 +25,28 @@ function (JSONModel, Device) {
                 
                 // 1. Selection Screen State
                 selection: {
-                    postingDate: new Date(), // Automatically sets to today
+                    postingDate: new Date(), 
                     plant: "",
                     salesOrder: "",
                     salesOrderItem: "",
-                    // toSalesOrder: "",        // NEW: Added for To Sales Order
-                    // toSalesOrderItem: "",    // NEW: Added for To Sales Order Item
-                    fromSloc: "",        // Adjust default as needed
-                    toSloc: "",          // Adjust default as needed
+                    // toSalesOrder: "",       
+                    // toSalesOrderItem: "",    
+                    fromSloc: "",        
+                    toSloc: "",          
                     remark: "",
                     yieldQty: "",
                     material: "", 
-                    prodOrder: "",       // NEW: Added for Production Order
-                    materialDescription: "" // NEW: Added for Material Description
+                    prodOrder: "",       
+                    materialDescription: "" ,
+                    isEndBits: false,    
+                    lotNumber: ""   ,     
+                    productGroup: ""     
                 },
 
                 // 2. Background Data (e.g., Loaded from your backend view)
                 allBatches: [],
 
-                // 3. Active Table Data (Scanned items shown on UI)
-                // When adding to this array via your controller, your object structure should look like:
+                
                 // { batch: "...", batchTransfer: "", material: "...", description: "...", qty: "...", uom: "..." }
                 scannedBatches: []
 

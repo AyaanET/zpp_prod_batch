@@ -43,6 +43,22 @@
                             />
 
                             <Label
+                                id="_IDGenLabelEndBits"
+                                text="End bits Transfer"
+                                design="Bold"
+                                class="sapThemeWarningText"
+                                
+                            />
+                            <Switch
+                                id="switchEndBits"
+                                state="{local>/selection/isEndBits}"
+                                change=".onEndBitsChange"
+                                customTextOn="Yes"
+                                customTextOff="No"
+                            />
+
+
+                            <Label
                                 id="_IDGenLabelProdOrder"
                                 text="Production Order"
                                 required="true"
@@ -66,6 +82,20 @@
                                     />
                                 </suggestionItems>
                             </Input>
+
+                            <Label
+                                id="_IDGenLabelLot"
+                                text="Lot Number"
+                                required="true"
+                                visible="{local>/selection/isEndBits}"
+                            />
+                            <Input
+                                id="inputLotNumber"
+                                value="{local>/selection/lotNumber}"
+                                placeholder="Enter Lot Number..."
+                                visible="{local>/selection/isEndBits}"
+                                editable="false"
+                            />
 
                             <Label
                                 id="_IDGenLabel"
@@ -137,6 +167,7 @@
                                 suggest=".onFromSlocSuggest"
                                 suggestionItems="{ path: '/ZI_STORAGELOCATION_VH', templateShareable: false }"
                                 valueHelpRequest=".onFromSlocValueHelp"
+                                editable="{= !${local>/selection/isEndBits} }"
                                 placeholder="Select From Sloc"
                             >
                                 <suggestionItems>
@@ -182,6 +213,8 @@
                                 id="inputRemark"
                                 value="{local>/selection/remark}"
                                 placeholder="Enter remark..."
+                                showValueHelp="{= !${local>/selection/isEndBits} }"
+                                valueHelpRequest=".onRemarkValueHelp"
                             />
                         </f:content>
                     </f:SimpleForm>
@@ -206,7 +239,6 @@
                     mode="MultiSelect"
                     fixedLayout="false"
                 >
-
                     <headerToolbar>
                         <OverflowToolbar id="_IDGenOverflowToolbar">
                             <Title
@@ -254,7 +286,7 @@
 
                         <Column
                             id="_IDGenColumn"
-                            width="6rem"
+                            width="8rem"
                         >
                             <Text
                                 id="_IDGenText8"
@@ -263,8 +295,19 @@
                         </Column>
 
                         <Column
-                            id="_IDGenColumnFromSloc"
+                            id="_IDGenColumn15"
                             width="6rem"
+                            visible="{= ${local>/selection/isEndBits} }"
+                        >
+                            <Text
+                                id="_IDGenText13"
+                                text="Batch Transfer"
+                            />
+                        </Column>
+
+                        <Column
+                            id="_IDGenColumnFromSloc"
+                            width="4rem"
                         >
                             <Text
                                 id="_IDGenTextFromSloc"
@@ -274,7 +317,7 @@
 
                         <Column
                             id="_IDGenColumnToSloc"
-                            width="6rem"
+                            width="4rem"
                         >
                             <Text
                                 id="_IDGenTextToSloc"
@@ -284,7 +327,7 @@
 
                         <Column
                             id="_IDGenColumn13"
-                            width="7rem"
+                            width="6rem"
                         >
                             <Text
                                 id="_IDGenText22"
@@ -294,7 +337,7 @@
 
                         <Column
                             id="_IDGenColumn14"
-                            width="4rem"
+                            width="2rem"
                         >
                             <Text
                                 id="_IDGenText29"
@@ -306,6 +349,7 @@
                             id="_IDGenColumnIssuedQty"
                             width="5rem"
                             hAlign="End"
+                            visible="{= !${local>/selection/isEndBits} }"
                         >
                             <Text
                                 id="_IDGenTextIssuedQty"
@@ -317,6 +361,7 @@
                             id="_IDGenColumnTransferredQty"
                             width="6rem"
                             hAlign="End"
+                            visible="{= !${local>/selection/isEndBits} }"
                         >
                             <Text
                                 id="_IDGenTextTransferredQty"
@@ -328,6 +373,7 @@
                             id="_IDGenColumnPendingQty"
                             width="6rem"
                             hAlign="End"
+                            visible="{= !${local>/selection/isEndBits} }"
                         >
                             <Text
                                 id="_IDGenTextPendingQty"
@@ -376,10 +422,30 @@
                                     id="_IDGenText15"
                                     text="{local>description}"
                                 />
+                                <VBox id="_IDGenVBoxBatch">
+                                    <!-- Normal Mode: Just text -->
+                                    <Text
+                                        id="_IDGenText16"
+                                        text="{local>batch}"
+                                        visible="{= !${local>/selection/isEndBits} }"
+                                    />
+
+                                    <!-- End Bits Mode: Input with Value Help -->
+                                    <Input
+                                        id="_IDGenInput"
+                                        value="{local>batch}"
+                                        visible="{local>/selection/isEndBits}"
+                                        showValueHelp="true"
+                                        valueHelpRequest=".onBatchValueHelp"
+                                        placeholder="Select Batch..."
+                                    />
+                                </VBox>
+
                                 <Text
-                                    id="_IDGenText13"
-                                    text="{local>batch}"
+                                    id="_IDGenText38"
+                                    text="{local>transferBatch}"
                                 />
+
                                 <Text
                                     id="_IDGenText27"
                                     text="{local>/selection/fromSloc}"

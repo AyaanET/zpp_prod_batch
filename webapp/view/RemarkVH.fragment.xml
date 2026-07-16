@@ -1,0 +1,36 @@
+<core:FragmentDefinition xmlns="sap.m" xmlns:core="sap.ui.core">
+    <TableSelectDialog id="remarkTableSelectDialog"
+        title="Select Remark"
+        items="{/ZR_WORK_MASTER_MAP}"
+        confirm=".onRemarkVHConfirm" 
+        search=".onRemarkVHSearch"
+        contentWidth="600px"         
+        contentHeight="400px"
+        rememberSelections="true">
+        
+        <ColumnListItem id="remarkColumnListItem">
+            <cells>
+                <Text id="remarkTextPlant" text="{Plant}" />
+                <Text id="remarkTextOp" text="{Operation}" />
+                <Text id="remarkTextGrp" text="{ProductGroup}" />
+                <Text id="remarkTextMaster" text="{MasterName}" />
+            </cells>
+        </ColumnListItem>
+        
+        <columns>
+            <Column id="remarkColPlant" width="5rem">
+                <header><Text id="remarkColTextPlant" text="Plant" /></header>
+            </Column>
+            <Column id="remarkColOp" width="6rem">
+                <header><Text id="remarkColTextOp" text="Operation" /></header>
+            </Column>
+            <Column id="remarkColGrp" width="8rem">
+                <header><Text id="remarkColTextGrp" text="Product Group" /></header>
+            </Column>
+            <Column id="remarkColMaster">
+                <header><Text id="remarkColTextMaster" text="Master Name" /></header>
+            </Column>
+        </columns>
+        
+    </TableSelectDialog>
+</core:FragmentDefinition>

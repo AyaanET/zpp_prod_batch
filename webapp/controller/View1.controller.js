@@ -4,10 +4,10 @@ sap.ui.define([
     "sap/ui/model/FilterOperator",
     "sap/m/MessageToast",
     "sap/ui/core/Fragment",
-    "zppprodbatch/model/models",     // Updated namespace
+    "zppprodbatch/model/models",     
     "sap/m/MessageBox",
     "sap/ui/core/format/DateFormat",
-    "sap/ui/export/Spreadsheet",       // <--- ADD THIS
+    "sap/ui/export/Spreadsheet",       
     "sap/ui/export/library"
 ], function (Controller, Filter, FilterOperator, MessageToast, Fragment, models, MessageBox, DateFormat, Spreadsheet, exportLibrary) {
     "use strict";
@@ -19,6 +19,36 @@ sap.ui.define([
             this.getView().setModel(oLocalModel, "local");
         },
 
+        onEndBitsChange: function (oEvent) {
+            var bIsChecked = oEvent.getParameter("state");
+            var oLocalModel = this.getView().getModel("local");
+
+            if (bIsChecked) {
+                oLocalModel.setProperty("/selection/fromSloc", "CTG1");
+                oLocalModel.setProperty("/selection/remark", "End Bits Transfer");
+            } else {
+                // Toggle is OFF: Clear the hardcoded value and Lot Number
+                oLocalModel.setProperty("/selection/fromSloc", "");
+                oLocalModel.setProperty("/selection/lotNumber", "");
+                oLocalModel.setProperty("/scannedBatches", []);
+                oLocalModel.setProperty("/selection/plant", "");
+                oLocalModel.setProperty("/selection/salesOrder", "");
+                oLocalModel.setProperty("/selection/salesOrderItem", "");
+                oLocalModel.setProperty("/selection/toSloc", "");
+                oLocalModel.setProperty("/selection/remark", "");
+                oLocalModel.setProperty("/selection/prodOrder", ""); 
+                // oLocalModel.setProperty("/selection/yieldQty", "");
+                oLocalModel.setProperty("/selection/material", "");
+                oLocalModel.setProperty("/selection/materialDescription", "");
+                oLocalModel.setProperty("/yieldQty", ""); 
+                oLocalModel.setProperty("/selection/productGroup", ""); 
+
+
+            }
+
+            this.onSelectionChange();
+        },
+
         onProdOrderChange: function () {
             var oView = this.getView();
             var oLocalModel = oView.getModel("local");
@@ -28,10 +58,8 @@ sap.ui.define([
                 return;
             }
 
-            // Pad the production order to 12 characters as SAP expects it
             var sFormattedProdOrder = sProdOrder.padStart(12, "0");
 
-            // Re-update the formatted value back to the model
             oLocalModel.setProperty("/selection/prodOrder", sFormattedProdOrder);
 
             this.fetchHeaderDataByProdOrder(sFormattedProdOrder);
@@ -39,16 +67,15 @@ sap.ui.define([
 
         fetchHeaderDataByProdOrder: function (sProdOrder) {
             var oView = this.getView();
-            var oModel = oView.getModel(); // Main OData V4 model
+            var oModel = oView.getModel();
             var oLocalModel = oView.getModel("local");
 
-            // Filter strictly by Manufacturing Order
             var aFilters = [
                 new Filter("ManufacturingOrder", FilterOperator.EQ, sProdOrder)
             ];
 
             var oListBinding = oModel.bindList("/ZI_SET_HEADER", null, null, aFilters, {
-                $select: "ManufacturingOrder,SalesOrder,SalesOrderItem,MfgOrderPlannedTotalQty,Material,ProductDescription,SFGMAT,SFGDes,BaseUnit,ProductionPlant"
+                $select: "ManufacturingOrder,SalesOrder,SalesOrderItem,YY1_LotNumber2_ORD,MfgOrderPlannedTotalQty,Material,ProductDescription,ProductGroup,BaseUnit,ProductionPlant"
             });
 
             oView.setBusy(true);
@@ -74,9 +101,16 @@ sap.ui.define([
                 // oLocalModel.setProperty("/selection/unit", oHeader.BaseUnit);
                 oLocalModel.setProperty("/selection/material", oHeader.Material);
                 oLocalModel.setProperty("/selection/materialDescription", oHeader.ProductDescription);
+                oLocalModel.setProperty("/selection/lotNumber", oHeader.YY1_LotNumber2_ORD);
+                oLocalModel.setProperty("/selection/productGroup", oHeader.ProductGroup);
                 // oLocalModel.setProperty("/selection/sfgmat", oHeader.SFGMAT);
                 // oLocalModel.setProperty("/selection/sfgdes", oHeader.SFGDes);
 
+                var bIsEndBits = oLocalModel.getProperty("/selection/isEndBits");
+
+                if (bIsEndBits) {
+                    this.onSelectionChange();
+                }
                 // Make sure fetchBatchesInBackground is defined elsewhere in your controller!
                 // if(this._fetchBatchesInBackground) {
                 //     this._fetchBatchesInBackground(oHeader.SalesOrder, oHeader.SalesOrderItem, oHeader.SFGMAT);
@@ -89,6 +123,8 @@ sap.ui.define([
                 oLocalModel.setProperty("/selection/plant", "");
                 oLocalModel.setProperty("/selection/material", "");
                 oLocalModel.setProperty("/selection/materialDescription", "");
+                oLocalModel.setProperty("/selection/lotNumber", "");
+                oLocalModel.setProperty("/selection/productGroup", "");
                 MessageBox.error("Error fetching header details.");
             });
         },
@@ -184,7 +220,6 @@ sap.ui.define([
                 var sSloc = oSelectedItem.getCells()[1].getText();
                 this.getView().byId("inputFromSloc").setValue(sSloc);
 
-                // Trigger the background fetch since From Sloc changed
                 this.onSelectionChange();
             }
         },
@@ -222,7 +257,7 @@ sap.ui.define([
             if (!this._oToSlocDialog) {
                 sap.ui.core.Fragment.load({
                     id: oView.getId(),
-                    name: "zppprodbatch.view.ToSlocVH", // Ensure this fragment is created
+                    name: "zppprodbatch.view.ToSlocVH", 
                     controller: this
                 }).then(function (oDialog) {
                     this._oToSlocDialog = oDialog;
@@ -266,13 +301,12 @@ sap.ui.define([
         // ==========================================
         // PRODUCTION ORDER VALUE HELP LOGIC
         // ==========================================
-        
+
         onProdOrderSuggest: function (oEvent) {
             var sTerm = oEvent.getParameter("suggestValue");
             var aFilters = [];
 
             if (sTerm) {
-                // Allows searching while typing
                 aFilters.push(new Filter("ManufacturingOrder", FilterOperator.StartsWith, sTerm));
             }
             oEvent.getSource().getBinding("suggestionItems").filter(aFilters);
@@ -280,41 +314,58 @@ sap.ui.define([
 
         onProdOrderValueHelp: function (oEvent) {
             var oView = this.getView();
+            var oLocalModel = oView.getModel("local");
+            var bIsEndBits = oLocalModel.getProperty("/selection/isEndBits");
 
-            if (!this._oProdOrdDialog) {
-                sap.ui.core.Fragment.load({
-                    id: oView.getId(),
-                    name: "zppprodbatch.view.ProdOrdVH", 
-                    controller: this
-                }).then(function (oDialog) {
-                    this._oProdOrdDialog = oDialog;
-                    oView.addDependent(this._oProdOrdDialog);
-                    
-                    this._oProdOrdDialog.open();
-                }.bind(this));
+            if (bIsEndBits) {
+                if (!this._oProdOrdDialogEndBits) {
+                    sap.ui.core.Fragment.load({
+                        id: oView.getId(),
+                        name: "zppprodbatch.view.ProdOrderVH",
+                        controller: this
+                    }).then(function (oDialog) {
+                        this._oProdOrdDialogEndBits = oDialog;
+                        oView.addDependent(this._oProdOrdDialogEndBits);
+                        this._oProdOrdDialogEndBits.open();
+                    }.bind(this));
+                } else {
+                    this._oProdOrdDialogEndBits.open();
+                }
+
             } else {
-                this._oProdOrdDialog.open();
+                if (!this._oProdOrdDialogStandard) {
+                    sap.ui.core.Fragment.load({
+                        id: oView.getId(),
+                        name: "zppprodbatch.view.ProdOrdVH",
+                        controller: this
+                    }).then(function (oDialog) {
+                        this._oProdOrdDialogStandard = oDialog;
+                        oView.addDependent(this._oProdOrdDialogStandard);
+                        this._oProdOrdDialogStandard.open();
+                    }.bind(this));
+                } else {
+                    this._oProdOrdDialogStandard.open();
+                }
             }
         },
 
-       onProdOrdVHSearch: function (oEvent) {
+        onProdOrdVHSearch: function (oEvent) {
             var sValue = oEvent.getParameter("value");
             var aFilters = [];
 
             if (sValue) {
-                // Group the filters and apply the OR condition
                 var oCombinedFilter = new Filter({
                     filters: [
                         new Filter("ManufacturingOrder", FilterOperator.Contains, sValue),
                         new Filter("Material", FilterOperator.Contains, sValue),
                         new Filter("ProductDescription", FilterOperator.Contains, sValue)
                     ],
-                    and: false // This is the magic property! It means OR.
+                    and: false 
                 });
-                
+
                 aFilters.push(oCombinedFilter);
             }
-            
+
             oEvent.getSource().getBinding("items").filter(aFilters);
         },
 
@@ -322,17 +373,189 @@ sap.ui.define([
             var oSelectedItem = oEvent.getParameter("selectedItem");
             if (oSelectedItem) {
                 var sProdOrder = oSelectedItem.getCells()[0].getText();
-                
-                // Update the local JSON model
+
                 this.getView().getModel("local").setProperty("/selection/prodOrder", sProdOrder);
-                
-                // Trigger the existing function to fetch the header details automatically!
-                this.onProdOrderChange(); 
+
+                this.onProdOrderChange();
             }
         },
 
+        // ==========================================
+        // REMARK F4 VALUE HELP LOGIC
+        // ==========================================
+        onRemarkValueHelp: function (oEvent) {
+            var oView = this.getView();
+            var oLocalModel = oView.getModel("local");
+            var bIsEndBits = oLocalModel.getProperty("/selection/isEndBits");
+
+            var sProductGroup = oLocalModel.getProperty("/selection/productGroup") || "";
+
+            if (sProductGroup === "SFG03") {
+                sProductGroup = "SFG02";
+            }
+
+            if (bIsEndBits) {
+                return;
+            }
+
+            var oFilter = new sap.ui.model.Filter({
+                filters: [
+                    new sap.ui.model.Filter("ProductGroup", sap.ui.model.FilterOperator.EQ, sProductGroup),
+                    new sap.ui.model.Filter("ProductGroup", sap.ui.model.FilterOperator.EQ, "")
+                ],
+                and: false // "OR" instead of "AND"
+            });
+
+            if (!this._oRemarkDialog) {
+                sap.ui.core.Fragment.load({
+                    id: oView.getId(),
+                    name: "zppprodbatch.view.RemarkVH",
+                    controller: this
+                }).then(function (oDialog) {
+                    this._oRemarkDialog = oDialog;
+                    oView.addDependent(this._oRemarkDialog);
+
+                    this._oRemarkDialog.getBinding("items").filter([oFilter]);
+                    this._oRemarkDialog.open();
+                }.bind(this));
+            } else {
+                this._oRemarkDialog.getBinding("items").filter([oFilter]);
+                this._oRemarkDialog.open();
+            }
+        },
+
+        onRemarkVHSearch: function (oEvent) {
+            var sValue = oEvent.getParameter("value");
+            var aFilters = [];
+
+            if (sValue) {
+                var sUpperValue = sValue.toUpperCase();
+
+                var aOrFilters = [
+                    new sap.ui.model.Filter("Operation", sap.ui.model.FilterOperator.Contains, sValue),
+                    new sap.ui.model.Filter("Operation", sap.ui.model.FilterOperator.Contains, sUpperValue),
+                    new sap.ui.model.Filter("ProductGroup", sap.ui.model.FilterOperator.Contains, sValue),
+                    new sap.ui.model.Filter("ProductGroup", sap.ui.model.FilterOperator.Contains, sUpperValue),
+                    new sap.ui.model.Filter("MasterName", sap.ui.model.FilterOperator.Contains, sValue),
+                    new sap.ui.model.Filter("MasterName", sap.ui.model.FilterOperator.Contains, sUpperValue)
+                ];
+
+                if (sValue.length <= 4) {
+                    aOrFilters.push(new sap.ui.model.Filter("Plant", sap.ui.model.FilterOperator.EQ, sUpperValue));
+                    aOrFilters.push(new sap.ui.model.Filter("Plant", sap.ui.model.FilterOperator.EQ, sValue));
+                }
+
+                aFilters.push(new sap.ui.model.Filter({
+                    filters: aOrFilters,
+                    and: false
+                }));
+            }
+
+            oEvent.getSource().getBinding("items").filter(aFilters);
+        },
+
+        onBatchValueHelp: function (oEvent) {
+            var oInput = oEvent.getSource();
+            var oRowContext = oInput.getBindingContext("local");
+            var oLocalModel = this.getView().getModel("local");
+
+            this._sBatchUpdatePath = oRowContext.getPath();
+
+            var sMaterial = oRowContext.getProperty("material");
+            var sPlant = oLocalModel.getProperty("/selection/plant");
+            var sFromSloc = oLocalModel.getProperty("/selection/fromSloc");
+            var sSalesOrder = oLocalModel.getProperty("/selection/salesOrder");
+            var sSalesOrderItem = oLocalModel.getProperty("/selection/salesOrderItem");
+
+            if (!this._oBatchDialog) {
+                this._oBatchDialog = new sap.m.TableSelectDialog({
+                    title: "Select Batch",
+                    confirm: this.onBatchDialogConfirm.bind(this),
+                    search: this.onBatchDialogSearch.bind(this),
+                    contentWidth: "1000px", 
+
+                    columns: [
+                        new sap.m.Column({ header: new sap.m.Text({ text: "Batch" }) }),
+                        new sap.m.Column({ header: new sap.m.Text({ text: "Available Qty" }) }),
+                        new sap.m.Column({ header: new sap.m.Text({ text: "Description" }) }),
+                        new sap.m.Column({ header: new sap.m.Text({ text: "Sales Order" }) }),
+                        new sap.m.Column({ header: new sap.m.Text({ text: "SO Item" }) }),
+                        new sap.m.Column({ header: new sap.m.Text({ text: "Storage Loc" }) }),
+                        new sap.m.Column({ header: new sap.m.Text({ text: "Plant" }) })
+                    ]
+                });
+                this.getView().addDependent(this._oBatchDialog);
+            }
+
+            var aFilters = [
+                new sap.ui.model.Filter("Material", sap.ui.model.FilterOperator.EQ, sMaterial),
+                new sap.ui.model.Filter("Plant", sap.ui.model.FilterOperator.EQ, sPlant),
+                new sap.ui.model.Filter("StorageLocation", sap.ui.model.FilterOperator.EQ, sFromSloc)
+            ];
+
+            if (sSalesOrder) {
+                aFilters.push(new sap.ui.model.Filter("SDDocument", sap.ui.model.FilterOperator.EQ, sSalesOrder));
+            }
+            if (sSalesOrderItem) {
+                aFilters.push(new sap.ui.model.Filter("SDDocumentItem", sap.ui.model.FilterOperator.EQ, sSalesOrderItem));
+            }
+
+            this._oBatchDialog.bindAggregation("items", {
+                path: "/ZI_GET_BATCH",
+                template: new sap.m.ColumnListItem({
+                    cells: [
+                        new sap.m.Text({ text: "{Batch}" }),
+                        new sap.m.Text({ text: "{QTY} {MaterialBaseUnit}" }),
+                        new sap.m.Text({ text: "{ProductDescription}" }),
+                        new sap.m.Text({ text: "{SDDocument}" }),
+                        new sap.m.Text({ text: "{SDDocumentItem}" }),
+                        new sap.m.Text({ text: "{StorageLocation}" }),
+                        new sap.m.Text({ text: "{Plant}" })
+                    ]
+                }),
+                filters: aFilters
+            });
+
+            this._oBatchDialog.open();
+        },
+
+        onBatchDialogSearch: function (oEvent) {
+            var sValue = oEvent.getParameter("value");
+            var oBinding = oEvent.getSource().getBinding("items");
+
+            if (sValue) {
+                oBinding.filter([new Filter("Batch", FilterOperator.Contains, sValue)]);
+            } else {
+                oBinding.filter([]);
+            }
+        },
+
+        onBatchDialogConfirm: function (oEvent) {
+            var oSelectedItem = oEvent.getParameter("selectedItem");
+            var oLocalModel = this.getView().getModel("local");
+
+            if (oSelectedItem && this._sBatchUpdatePath) {
+
+                var sSelectedBatch = oSelectedItem.getCells()[0].getText();
+
+                oLocalModel.setProperty(this._sBatchUpdatePath + "/batch", sSelectedBatch);
+            }
+
+            this._sBatchUpdatePath = null;
+        },
 
         _fetchBatchesInBackground: function (sPlant, sFromSloc, sSalesOrder, sSalesOrderItem, sProdOrder) {
+            var oLocalModel = this.getView().getModel("local");
+            var bIsEndBits = oLocalModel.getProperty("/selection/isEndBits");
+
+            if (bIsEndBits) {
+                this._fetchComponentsForEndBits(sProdOrder, sPlant, sFromSloc, sSalesOrder, sSalesOrderItem);
+            } else {
+                this._fetchStandardBatches(sPlant, sFromSloc, sSalesOrder, sSalesOrderItem, sProdOrder);
+            }
+        },
+
+        _fetchStandardBatches: function (sPlant, sFromSloc, sSalesOrder, sSalesOrderItem, sProdOrder) {
             var oView = this.getView();
             var oLocalModel = oView.getModel("local");
             var oModel = oView.getModel(); // Primary OData V4 Model
@@ -410,6 +633,71 @@ sap.ui.define([
             });
         },
 
+        _fetchComponentsForEndBits: function (sProdOrder, sPlant, sFromSloc, sSalesOrder, sSalesOrderItem) {
+            var oView = this.getView();
+            var oLocalModel = oView.getModel("local");
+            var oModel = oView.getModel(); // Primary OData V4 Model
+
+            var aFilters = [
+                new Filter("ProductionOrder", FilterOperator.EQ, sProdOrder)
+            ];
+
+            var mParameters = {
+                "$select": "ProductionOrder,Material,ProductDescription,Plant,StorageLocation,EntryUnit"
+            };
+
+            var oListBinding = oModel.bindList("/ZI_SET_COMP", null, null, aFilters, mParameters);
+
+            oView.setBusy(true);
+
+            oListBinding.requestContexts(0, 5000).then(function (aContexts) {
+                oView.setBusy(false);
+
+                var aAllComponents = aContexts.map(function (oContext) {
+                    return oContext.getObject();
+                });
+
+                var sToSloc = oLocalModel.getProperty("/selection/toSloc") || "";
+                var sLotNumber = oLocalModel.getProperty("/selection/lotNumber") || "";
+
+                // Construct the array with blank Batches and blank Quantities
+                var aTableBatches = aAllComponents.map(function (comp) {
+                    return {
+                        batch: "", 
+                        material: comp.Material,
+                        description: comp.ProductDescription,
+                        fromSloc: sFromSloc, 
+                        toSloc: sToSloc,
+                        salesOrder: sSalesOrder,
+                        salesOrderItem: sSalesOrderItem,
+                        plant: sPlant,
+                        transferBatch: sLotNumber,
+
+                        issuedQty: 0, 
+                        transferredQty: 0, 
+                        pendingQty: 0, 
+
+                        qty: "", 
+                        uom: comp.EntryUnit
+                    };
+                });
+
+                oLocalModel.setProperty("/scannedBatches", aTableBatches);
+                this._calculateTotalYield();
+
+                if (aAllComponents.length > 0) {
+                    sap.m.MessageToast.show("End Bits Mode: Loaded " + aAllComponents.length + " components. Please select batches.");
+                } else {
+                    sap.m.MessageToast.show("No components found for this Production Order.");
+                }
+
+            }.bind(this)).catch(function (oError) {
+                oView.setBusy(false);
+                console.error("Fetch failed:", oError);
+                sap.m.MessageToast.show("Failed to load components from SAP.");
+            });
+        },
+
 
         // ==========================================
         // DELETE SELECTED BATCHES
@@ -448,13 +736,10 @@ sap.ui.define([
             var aScannedBatches = oLocalModel.getProperty("/scannedBatches") || [];
             var fTotalQty = 0;
 
-            // Loop through all scanned batches and sum the quantity
             aScannedBatches.forEach(function (oBatch) {
-                // Parse float to ensure mathematical addition, not string concatenation
                 fTotalQty += parseFloat(oBatch.qty) || 0;
             });
 
-            // Set the total back to the model, rounded to 2 decimal places (optional)
             oLocalModel.setProperty("/selection/yieldQty", fTotalQty.toFixed(3));
         },
 
@@ -471,11 +756,13 @@ sap.ui.define([
             oLocalModel.setProperty("/selection/fromSloc", "");
             oLocalModel.setProperty("/selection/toSloc", "");
             oLocalModel.setProperty("/selection/remark", "");
-            oLocalModel.setProperty("/selection/prodOrder", ""); // NEW: Added for Production Order
+            oLocalModel.setProperty("/selection/prodOrder", ""); 
             // oLocalModel.setProperty("/selection/yieldQty", "");
             oLocalModel.setProperty("/selection/material", "");
             oLocalModel.setProperty("/selection/materialDescription", "");
             oLocalModel.setProperty("/yieldQty", ""); // Reset yield quantity
+            oLocalModel.setProperty("/selection/lotNumber", ""); // Reset lot number
+            oLocalModel.setProperty("/selection/productGroup", ""); // Reset product group
             // oLocalModel.setProperty("/selection/toSalesOrder", "");
             // oLocalModel.setProperty("/selection/toSalesOrderItem", "");
 
@@ -505,18 +792,19 @@ sap.ui.define([
                 return;
             }
 
+
             for (var i = 0; i < aScannedBatches.length; i++) {
                 var oBatch = aScannedBatches[i];
-                
+
                 var fQtyToTransfer = parseFloat(oBatch.qty) || 0;
                 var fPendingQty = parseFloat(oBatch.pendingQty) || 0;
 
-                if (fQtyToTransfer > fPendingQty) {
+                if (fQtyToTransfer > fPendingQty && !oSelection.isEndBits) {
                     MessageBox.error(
                         "Error on Batch " + oBatch.batch + ":\n\n" +
                         "Quantity to Transfer (" + fQtyToTransfer + ") cannot be greater than the Pending Quantity (" + fPendingQty + ")."
                     );
-                    return; 
+                    return;
                 }
 
                 if (fQtyToTransfer <= 0) {
@@ -524,9 +812,10 @@ sap.ui.define([
                         "Error on Batch " + oBatch.batch + ":\n\n" +
                         "Quantity to Transfer must be greater than zero."
                     );
-                    return; 
+                    return;
                 }
-            }
+
+            };
 
             var oDateFormat = DateFormat.getDateInstance({ pattern: "yyyy-MM-dd" });
             var sFormattedDate = oDateFormat.format(oSelection.postingDate);
@@ -545,6 +834,7 @@ sap.ui.define([
                     "Qty": String(oBatch.qty),
                     "Unit": oBatch.uom,
                     "Batch": oBatch.batch,
+                    "ToBatch": oBatch.transferBatch,
                     "FromSalesOrder": sSalesOrder,
                     "FromSalesOrderItem": sSalesOrderItem,
                     "ProdOrder": sProdOrder,
@@ -596,10 +886,14 @@ sap.ui.define([
                             oLocalModel.setProperty("/selection/prodOrder", "");
                             oLocalModel.setProperty("/selection/materialDescription", "");
                             oLocalModel.setProperty("/selection/material", "");
+                            oLocalModel.setProperty("/selection/lotNumber", "");
+                            oLocalModel.setProperty("/selection/productGroup", "");
                             // oLocalModel.setProperty("/selection/toSalesOrder", "");
                             // oLocalModel.setProperty("/selection/toSalesOrderItem", "");
-                            oLocalModel.setProperty("/selection/remark", "");
 
+                            if (!oSelection.isEndBits) {
+                                oLocalModel.setProperty("/selection/remark", "");
+                            }
                             var oPlantInput = oView.byId("inputPlant");
                             if (oPlantInput) {
                                 oPlantInput.focus();
@@ -624,10 +918,16 @@ sap.ui.define([
         // ==========================================
         // EXPORT TO EXCEL LOGIC
         // ==========================================
+// ==========================================
+        // EXPORT TO EXCEL LOGIC
+        // ==========================================
         onExportExcel: function () {
             var oView = this.getView();
             var oLocalModel = oView.getModel("local");
             var aScannedBatches = oLocalModel.getProperty("/scannedBatches");
+            
+            // 1. Get the End Bits toggle state
+            var bIsEndBits = oLocalModel.getProperty("/selection/isEndBits");
 
             if (!aScannedBatches || aScannedBatches.length === 0) {
                 sap.m.MessageToast.show("There are no scanned batches to export.");
@@ -638,6 +938,7 @@ sap.ui.define([
             var sFromSloc = oLocalModel.getProperty("/selection/fromSloc") || "";
             var sSalesOrder = oLocalModel.getProperty("/selection/salesOrder") || "";
             var sSalesOrderItem = oLocalModel.getProperty("/selection/salesOrderItem") || "";
+            var sLotNumber = oLocalModel.getProperty("/selection/lotNumber") || ""; 
 
             var aExportData = aScannedBatches.map(function (oBatch) {
                 var oExportRow = Object.assign({}, oBatch);
@@ -645,19 +946,22 @@ sap.ui.define([
                 oExportRow.fromSloc = sFromSloc;
                 oExportRow.salesOrder = sSalesOrder;
                 oExportRow.salesOrderItem = sSalesOrderItem;
+                
+                if (bIsEndBits) {
+                    oExportRow.lotNumber = sLotNumber;
+                }
+                
                 return oExportRow;
             });
 
-            var aCols = this._createColumnConfig();
+            var aCols = this._createColumnConfig(bIsEndBits);
 
             var oSettings = {
                 workbook: {
                     columns: aCols,
                     hierarchyLevel: 'Level'
                 },
-
                 dataSource: aExportData,
-
                 fileName: 'Confirmation_Items.xlsx',
                 worker: false
             };
@@ -668,73 +972,40 @@ sap.ui.define([
             });
         },
 
-        _createColumnConfig: function () {
+        _createColumnConfig: function (bIsEndBits) {
             var EdmType = exportLibrary.EdmType;
 
-            return [
-                {
-                    label: 'Material',
-                    property: 'material',
-                    type: EdmType.String
-                },
-                {
-                    label: 'Description',
-                    property: 'description',
-                    type: EdmType.String
-                },
-                {
-                    label: 'Batch',
-                    property: 'batch',
-                    type: EdmType.String
-                },
-                {
-                    label: 'From Sloc',
-                    property: 'fromSloc',
-                    type: EdmType.String
-                },
-                {
-                    label: 'To Sloc',
-                    property: 'toSloc',
-                    type: EdmType.String
-                },
-                {
-                    label: 'Sales Order',
-                    property: 'salesOrder',
-                    type: EdmType.String
-                },
-                {
-                    label: 'Item',
-                    property: 'salesOrderItem',
-                    type: EdmType.String
-                },
-
-                {
-                    label: 'Issued Qty',
-                    property: 'issuedQty',
-                    type: EdmType.Number
-                },
-                {
-                    label: 'Transferred Qty',
-                    property: 'transferredQty',
-                    type: EdmType.Number
-                },
-                {
-                    label: 'Pending Qty',
-                    property: 'pendingQty',
-                    type: EdmType.Number
-                },
-
-                {
-                    label: 'Qty To Transfer',
-                    property: 'qty',
-                    type: EdmType.Number
-                },
-                {
-                    label: 'UoM',
-                    property: 'uom',
-                    type: EdmType.String
-                }
+            var aCols = [
+                { label: 'Material', property: 'material', type: EdmType.String },
+                { label: 'Description', property: 'description', type: EdmType.String },
+                { label: 'Batch', property: 'batch', type: EdmType.String }
             ];
+
+            if (bIsEndBits) {
+                aCols.push({ label: 'Batch Transfer', property: 'lotNumber', type: EdmType.String });
+            }
+
+            aCols.push(
+                { label: 'From Sloc', property: 'fromSloc', type: EdmType.String },
+                { label: 'To Sloc', property: 'toSloc', type: EdmType.String },
+                { label: 'Sales Order', property: 'salesOrder', type: EdmType.String },
+                { label: 'Item', property: 'salesOrderItem', type: EdmType.String }
+            );
+
+            if (!bIsEndBits) {
+                aCols.push(
+                    { label: 'Issued Qty', property: 'issuedQty', type: EdmType.Number },
+                    { label: 'Transferred Qty', property: 'transferredQty', type: EdmType.Number },
+                    { label: 'Pending Qty', property: 'pendingQty', type: EdmType.Number }
+                );
+            }
+
+            aCols.push(
+                { label: 'Qty To Transfer', property: 'qty', type: EdmType.Number },
+                { label: 'UoM', property: 'uom', type: EdmType.String }
+            );
+
+            return aCols;
         }
     });
 });
