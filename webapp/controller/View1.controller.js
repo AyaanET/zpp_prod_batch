@@ -409,6 +409,7 @@ sap.ui.define([
             if (!this._oRemarkDialog) {
                 sap.ui.core.Fragment.load({
                     id: oView.getId(),
+                    confirm: this.onRemarkVHConfirm.bind(this),
                     name: "zppprodbatch.view.RemarkVH",
                     controller: this
                 }).then(function (oDialog) {
@@ -452,6 +453,17 @@ sap.ui.define([
             }
 
             oEvent.getSource().getBinding("items").filter(aFilters);
+        },
+
+        onRemarkVHConfirm: function (oEvent) {
+            var oSelectedItem = oEvent.getParameter("selectedItem");
+            var oLocalModel = this.getView().getModel("local");
+
+            if (oSelectedItem) {
+                var sSelectedRemark = oSelectedItem.getCells()[3].getText(); 
+                
+                oLocalModel.setProperty("/selection/remark", sSelectedRemark);
+            }
         },
 
         onBatchValueHelp: function (oEvent) {
@@ -839,7 +851,7 @@ sap.ui.define([
                     "FromSalesOrderItem": sSalesOrderItem,
                     "ProdOrder": sProdOrder,
                     "StorlocFrom": oBatch.fromSloc,
-                    "StorlocTo": oBatch.toSloc,
+                    "StorlocTo": oSelection.toSloc,
                     "MatDes": oBatch.description,
                     "Plant": oSelection.plant,
                     "PostingDate": sFormattedDate,
