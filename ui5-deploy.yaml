@@ -21,7 +21,7 @@ builder:
         app:
           name: ZPP_PROD_BATCH
           package: ZPP_PROD_BATCH
-          transport: EGFK902083
+          transport: EGFK902191
         exclude:
           - /test/
           - /localService/
