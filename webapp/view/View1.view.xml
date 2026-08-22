@@ -87,13 +87,11 @@
                                 id="_IDGenLabelLot"
                                 text="Lot Number"
                                 required="true"
-                                visible="{local>/selection/isEndBits}"
                             />
                             <Input
                                 id="inputLotNumber"
                                 value="{local>/selection/lotNumber}"
                                 placeholder="Enter Lot Number..."
-                                visible="{local>/selection/isEndBits}"
                                 editable="false"
                             />
 
