@@ -75,7 +75,7 @@ sap.ui.define([
             ];
 
             var oListBinding = oModel.bindList("/ZI_SET_HEADER", null, null, aFilters, {
-                $select: "ManufacturingOrder,SalesOrder,SalesOrderItem,YY1_LotNumber2_ORD,MfgOrderPlannedTotalQty,Material,ProductDescription,ProductGroup,BaseUnit,ProductionPlant"
+                $select: "ManufacturingOrder,SalesOrder,SalesOrderItem,YY1_LotNumber2_ORD,MfgOrderPlannedTotalQty,Material,ProductDescription,ProductGroup,BaseUnit,ProductionPlant,DeliveryDate"
             });
 
             oView.setBusy(true);
@@ -87,6 +87,7 @@ sap.ui.define([
                     oLocalModel.setProperty("/selection/plant", "");
                     oLocalModel.setProperty("/selection/material", "");
                     oLocalModel.setProperty("/selection/materialDescription", "");
+                    oLocalModel.setProperty("/selection/deliveryDate", "");
                     MessageToast.show("No header details found for this Production Order.");
                     return;
                 }
@@ -103,6 +104,7 @@ sap.ui.define([
                 oLocalModel.setProperty("/selection/materialDescription", oHeader.ProductDescription);
                 oLocalModel.setProperty("/selection/lotNumber", oHeader.YY1_LotNumber2_ORD);
                 oLocalModel.setProperty("/selection/productGroup", oHeader.ProductGroup);
+                oLocalModel.setProperty("/selection/deliveryDate", oHeader.DeliveryDate);
                 // oLocalModel.setProperty("/selection/sfgmat", oHeader.SFGMAT);
                 // oLocalModel.setProperty("/selection/sfgdes", oHeader.SFGDes);
 
@@ -125,6 +127,7 @@ sap.ui.define([
                 oLocalModel.setProperty("/selection/materialDescription", "");
                 oLocalModel.setProperty("/selection/lotNumber", "");
                 oLocalModel.setProperty("/selection/productGroup", "");
+                oLocalModel.setProperty("/selection/deliveryDate", "");
                 MessageBox.error("Error fetching header details.");
             });
         },
@@ -775,6 +778,7 @@ sap.ui.define([
             oLocalModel.setProperty("/yieldQty", ""); // Reset yield quantity
             oLocalModel.setProperty("/selection/lotNumber", ""); // Reset lot number
             oLocalModel.setProperty("/selection/productGroup", ""); // Reset product group
+            oLocalModel.setProperty("/selection/deliveryDate", ""); // Reset delivery date
             // oLocalModel.setProperty("/selection/toSalesOrder", "");
             // oLocalModel.setProperty("/selection/toSalesOrderItem", "");
 
@@ -835,6 +839,11 @@ sap.ui.define([
             var sSalesOrderItem = oSelection.salesOrderItem.padStart(6, '0');
             var sProdOrder = oSelection.prodOrder.padStart(12, '0'); // Pad Production Order to 12 characters
 
+            if(oSelection.deliveryDate > sFormattedDate)
+            {
+                MessageBox.error("Select a valid posting date");
+                return;
+            }
             // Format To fields
             // var sToSalesOrder = oSelection.toSalesOrder ? oSelection.toSalesOrder.padStart(10, '0') : "";
             // var sToSalesOrderItem = oSelection.toSalesOrderItem ? oSelection.toSalesOrderItem.padStart(6, '0') : "";
