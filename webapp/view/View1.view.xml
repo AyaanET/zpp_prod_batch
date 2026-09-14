@@ -191,6 +191,7 @@
                                 suggest=".onToSlocSuggest"
                                 suggestionItems="{ path: '/ZI_STORAGELOCATION_VH', templateShareable: false }"
                                 valueHelpRequest=".onToSlocValueHelp"
+                                editable="{= !${local>/selection/isEndBits} }"
                                 placeholder="Select To Sloc"
                             >
                                 <suggestionItems>

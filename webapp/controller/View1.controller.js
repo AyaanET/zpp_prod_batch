@@ -25,6 +25,7 @@ sap.ui.define([
 
             if (bIsChecked) {
                 oLocalModel.setProperty("/selection/fromSloc", "CTG1");
+                oLocalModel.setProperty("/selection/toSloc", "PP02");
                 oLocalModel.setProperty("/selection/remark", "End Bits Transfer");
             } else {
                 // Toggle is OFF: Clear the hardcoded value and Lot Number
@@ -75,7 +76,7 @@ sap.ui.define([
             ];
 
             var oListBinding = oModel.bindList("/ZI_SET_HEADER", null, null, aFilters, {
-                $select: "ManufacturingOrder,SalesOrder,SalesOrderItem,YY1_LotNumber2_ORD,MfgOrderPlannedTotalQty,Material,ProductDescription,ProductGroup,BaseUnit,ProductionPlant,DeliveryDate"
+                $select: "ManufacturingOrder,SalesOrder,SalesOrderItem,YY1_LotNumber2_ORD,MfgOrderPlannedTotalQty,Material,ProductDescription,ProductGroup,BaseUnit,ProductionPlant,DeliveryDate,ActualDeliveredQuantity"
             });
 
             oView.setBusy(true);
@@ -105,6 +106,7 @@ sap.ui.define([
                 oLocalModel.setProperty("/selection/lotNumber", oHeader.YY1_LotNumber2_ORD);
                 oLocalModel.setProperty("/selection/productGroup", oHeader.ProductGroup);
                 oLocalModel.setProperty("/selection/deliveryDate", oHeader.DeliveryDate);
+                oLocalModel.setProperty("/selection/yieldQty", oHeader.ActualDeliveredQuantity);
                 // oLocalModel.setProperty("/selection/sfgmat", oHeader.SFGMAT);
                 // oLocalModel.setProperty("/selection/sfgdes", oHeader.SFGDes);
 
@@ -142,10 +144,16 @@ sap.ui.define([
             var sSalesOrderItem = oSelection.salesOrderItem;
             var sFromSloc = oSelection.fromSloc;
             var sProdOrder = oSelection.prodOrder;
+            var sYieldQty = oSelection.yieldQty;
             if (!sPlant || !sFromSloc || !sProdOrder) {
                 if (oLocalModel) {
                     oLocalModel.setProperty("/allBatches", []);
                 }
+                return;
+            }
+
+            if (sYieldQty <= 0 || sYieldQty === "" || sYieldQty === null) {
+                MessageToast.show("Yield Qty is zero, please select a different order");
                 return;
             }
 
@@ -481,6 +489,8 @@ sap.ui.define([
             var sFromSloc = oLocalModel.getProperty("/selection/fromSloc");
             var sSalesOrder = oLocalModel.getProperty("/selection/salesOrder");
             var sSalesOrderItem = oLocalModel.getProperty("/selection/salesOrderItem");
+            var sLotNumber = oLocalModel.getProperty("/selection/lotNumber");
+            var sEndBits = oLocalModel.getProperty("/selection/isEndBits");
 
             if (!this._oBatchDialog) {
                 this._oBatchDialog = new sap.m.TableSelectDialog({
@@ -507,6 +517,10 @@ sap.ui.define([
                 new sap.ui.model.Filter("Plant", sap.ui.model.FilterOperator.EQ, sPlant),
                 new sap.ui.model.Filter("StorageLocation", sap.ui.model.FilterOperator.EQ, sFromSloc)
             ];
+
+            if(sEndBits) {
+                aFilters.push(new sap.ui.model.Filter("Batch", sap.ui.model.FilterOperator.EQ, sLotNumber));
+            }
 
             if (sSalesOrder) {
                 aFilters.push(new sap.ui.model.Filter("SDDocument", sap.ui.model.FilterOperator.EQ, sSalesOrder));
