@@ -1,0 +1,32 @@
+<core:FragmentDefinition xmlns="sap.m" xmlns:core="sap.ui.core">
+    <TableSelectDialog id="workCenterTableSelectDialog"
+        title="Select Work Center"
+        items="{/Zvh_workcenter}"
+        confirm=".onWorkCenterVHConfirm" 
+        contentWidth="600px"         
+        contentHeight="400px"
+        search=".onWorkCenterVHSearch"
+        rememberSelections="true">
+        
+        <ColumnListItem id="workCenterColumnListItem">
+            <cells>
+                <Text id="workCenterTextPlant" text="{Plant}" />
+                <Text id="workCenterTextWorkCenter" text="{WorkCenter}" />
+                <Text id="workCenterTextName" text="{WorkCenterText}" />
+            </cells>
+        </ColumnListItem>
+        
+        <columns>
+            <Column id="workCenterColPlant" width="6rem">
+                <header><Text id="workCenterColTextPlant" text="Plant" /></header>
+            </Column>
+            <Column id="workCenterColWorkCenter" width="8rem">
+                <header><Text id="workCenterColTextWorkCenter" text="Work Center" /></header>
+            </Column>
+            <Column id="workCenterColName">
+                <header><Text id="workCenterColTextName" text="Description" /></header>
+            </Column>
+        </columns>
+        
+    </TableSelectDialog>
+</core:FragmentDefinition>

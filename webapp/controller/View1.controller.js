@@ -4,10 +4,10 @@ sap.ui.define([
     "sap/ui/model/FilterOperator",
     "sap/m/MessageToast",
     "sap/ui/core/Fragment",
-    "zppprodbatch/model/models",     
+    "zppprodbatch/model/models",
     "sap/m/MessageBox",
     "sap/ui/core/format/DateFormat",
-    "sap/ui/export/Spreadsheet",       
+    "sap/ui/export/Spreadsheet",
     "sap/ui/export/library"
 ], function (Controller, Filter, FilterOperator, MessageToast, Fragment, models, MessageBox, DateFormat, Spreadsheet, exportLibrary) {
     "use strict";
@@ -37,12 +37,12 @@ sap.ui.define([
                 oLocalModel.setProperty("/selection/salesOrderItem", "");
                 oLocalModel.setProperty("/selection/toSloc", "");
                 oLocalModel.setProperty("/selection/remark", "");
-                oLocalModel.setProperty("/selection/prodOrder", ""); 
+                oLocalModel.setProperty("/selection/prodOrder", "");
                 // oLocalModel.setProperty("/selection/yieldQty", "");
                 oLocalModel.setProperty("/selection/material", "");
                 oLocalModel.setProperty("/selection/materialDescription", "");
-                oLocalModel.setProperty("/yieldQty", ""); 
-                oLocalModel.setProperty("/selection/productGroup", ""); 
+                oLocalModel.setProperty("/yieldQty", "");
+                oLocalModel.setProperty("/selection/productGroup", "");
 
 
             }
@@ -268,7 +268,7 @@ sap.ui.define([
             if (!this._oToSlocDialog) {
                 sap.ui.core.Fragment.load({
                     id: oView.getId(),
-                    name: "zppprodbatch.view.ToSlocVH", 
+                    name: "zppprodbatch.view.ToSlocVH",
                     controller: this
                 }).then(function (oDialog) {
                     this._oToSlocDialog = oDialog;
@@ -306,6 +306,89 @@ sap.ui.define([
             if (oSelectedItem) {
                 var sSloc = oSelectedItem.getCells()[1].getText();
                 this.getView().byId("inputToSloc").setValue(sSloc);
+            }
+        },
+
+        // ==========================================
+        // WORK CENTER VALUE HELP LOGIC
+        // ==========================================
+
+        onWorkCenterSuggest: function (oEvent) {
+            var sTerm = oEvent.getParameter("suggestValue");
+            var sPlant = this.getView().byId("inputPlant").getValue();
+            var aFilters = [];
+
+            if (!sPlant) {
+                sap.m.MessageToast.show("Please select a Plant first");
+                oEvent.getSource().getBinding("suggestionItems").filter([]);
+                return;
+            }
+
+            aFilters.push(new Filter("Plant", FilterOperator.EQ, sPlant));
+
+            if (sTerm) {
+                aFilters.push(new Filter({
+                    filters: [
+                        new Filter("WorkCenter", FilterOperator.Contains, sTerm),
+                        new Filter("WorkCenterText", FilterOperator.Contains, sTerm)
+                    ],
+                    and: false
+                }));
+            }
+
+            oEvent.getSource().getBinding("suggestionItems").filter(aFilters);
+        },
+
+        onWorkCenterValueHelp: function (oEvent) {
+            var oView = this.getView();
+            var sPlant = oView.byId("inputPlant").getValue();
+
+            if (!sPlant) {
+                sap.m.MessageToast.show("Please select a Plant first");
+                return;
+            }
+
+            if (!this._oWorkCenterDialog) {
+                sap.ui.core.Fragment.load({
+                    id: oView.getId(),
+                    name: "zppprodbatch.view.WorkCenterVH",
+                    controller: this
+                }).then(function (oDialog) {
+                    this._oWorkCenterDialog = oDialog;
+                    oView.addDependent(this._oWorkCenterDialog);
+                    var oFilter = new Filter("Plant", FilterOperator.EQ, sPlant);
+                    this._oWorkCenterDialog.getBinding("items").filter([oFilter]);
+                    this._oWorkCenterDialog.open();
+                }.bind(this));
+            } else {
+                var oFilter = new Filter("Plant", FilterOperator.EQ, sPlant);
+                this._oWorkCenterDialog.getBinding("items").filter([oFilter]);
+                this._oWorkCenterDialog.open();
+            }
+        },
+
+        onWorkCenterVHSearch: function (oEvent) {
+            var sValue = oEvent.getParameter("value");
+            var sPlant = this.getView().byId("inputPlant").getValue();
+            var aFilters = [new Filter("Plant", FilterOperator.EQ, sPlant)];
+
+            if (sValue) {
+                aFilters.push(new Filter({
+                    filters: [
+                        new Filter("WorkCenter", FilterOperator.Contains, sValue),
+                        new Filter("WorkCenterText", FilterOperator.Contains, sValue)
+                    ],
+                    and: false
+                }));
+            }
+            oEvent.getSource().getBinding("items").filter(aFilters);
+        },
+
+        onWorkCenterVHConfirm: function (oEvent) {
+            var oSelectedItem = oEvent.getParameter("selectedItem");
+            if (oSelectedItem) {
+                var sWorkCenter = oSelectedItem.getCells()[1].getText();
+                this.getView().byId("inputWorkCenter").setValue(sWorkCenter);
             }
         },
 
@@ -371,7 +454,7 @@ sap.ui.define([
                         new Filter("Material", FilterOperator.Contains, sValue),
                         new Filter("ProductDescription", FilterOperator.Contains, sValue)
                     ],
-                    and: false 
+                    and: false
                 });
 
                 aFilters.push(oCombinedFilter);
@@ -471,8 +554,8 @@ sap.ui.define([
             var oLocalModel = this.getView().getModel("local");
 
             if (oSelectedItem) {
-                var sSelectedRemark = oSelectedItem.getCells()[3].getText(); 
-                
+                var sSelectedRemark = oSelectedItem.getCells()[3].getText();
+
                 oLocalModel.setProperty("/selection/remark", sSelectedRemark);
             }
         },
@@ -497,7 +580,7 @@ sap.ui.define([
                     title: "Select Batch",
                     confirm: this.onBatchDialogConfirm.bind(this),
                     search: this.onBatchDialogSearch.bind(this),
-                    contentWidth: "1000px", 
+                    contentWidth: "1000px",
 
                     columns: [
                         new sap.m.Column({ header: new sap.m.Text({ text: "Batch" }) }),
@@ -518,7 +601,7 @@ sap.ui.define([
                 new sap.ui.model.Filter("StorageLocation", sap.ui.model.FilterOperator.EQ, sFromSloc)
             ];
 
-            if(sEndBits) {
+            if (sEndBits) {
                 aFilters.push(new sap.ui.model.Filter("Batch", sap.ui.model.FilterOperator.EQ, sLotNumber));
             }
 
@@ -692,21 +775,21 @@ sap.ui.define([
                 // Construct the array with blank Batches and blank Quantities
                 var aTableBatches = aAllComponents.map(function (comp) {
                     return {
-                        batch: "", 
+                        batch: "",
                         material: comp.Material,
                         description: comp.ProductDescription,
-                        fromSloc: sFromSloc, 
+                        fromSloc: sFromSloc,
                         toSloc: sToSloc,
                         salesOrder: sSalesOrder,
                         salesOrderItem: sSalesOrderItem,
                         plant: sPlant,
                         transferBatch: sLotNumber,
 
-                        issuedQty: 0, 
-                        transferredQty: 0, 
-                        pendingQty: 0, 
+                        issuedQty: 0,
+                        transferredQty: 0,
+                        pendingQty: 0,
 
-                        qty: "", 
+                        qty: "",
                         uom: comp.EntryUnit
                     };
                 });
@@ -784,8 +867,9 @@ sap.ui.define([
             oLocalModel.setProperty("/selection/salesOrderItem", "");
             oLocalModel.setProperty("/selection/fromSloc", "");
             oLocalModel.setProperty("/selection/toSloc", "");
+            oLocalModel.setProperty("/selection/workCenter", "");
             oLocalModel.setProperty("/selection/remark", "");
-            oLocalModel.setProperty("/selection/prodOrder", ""); 
+            oLocalModel.setProperty("/selection/prodOrder", "");
             // oLocalModel.setProperty("/selection/yieldQty", "");
             oLocalModel.setProperty("/selection/material", "");
             oLocalModel.setProperty("/selection/materialDescription", "");
@@ -802,274 +886,277 @@ sap.ui.define([
         // ==========================================
         // SUBMIT TO BACKEND
         // ==========================================
-onSubmit: function () {
-    var that = this;
-    var oView = this.getView();
-    var oLocalModel = oView.getModel("local");
-    var oODataModel = oView.getModel();
+        onSubmit: function () {
+            var that = this;
+            var oView = this.getView();
+            var oLocalModel = oView.getModel("local");
+            var oODataModel = oView.getModel();
 
-    var oSelection = oLocalModel.getProperty("/selection");
-    var aScannedBatches = oLocalModel.getProperty("/scannedBatches") || [];
+            var oSelection = oLocalModel.getProperty("/selection");
+            var aScannedBatches = oLocalModel.getProperty("/scannedBatches") || [];
 
-    if (!oSelection.plant || !oSelection.prodOrder || !oSelection.salesOrder || !oSelection.salesOrderItem ||
-        !oSelection.fromSloc || !oSelection.toSloc || !oSelection.postingDate) {
+            if (!oSelection.plant || !oSelection.prodOrder || !oSelection.salesOrder || !oSelection.salesOrderItem ||
+                !oSelection.fromSloc || !oSelection.toSloc || !oSelection.postingDate) {
 
-        MessageBox.error("Please fill in all mandatory details before submitting.");
-        return;
-    }
-
-    if (aScannedBatches.length === 0) {
-        MessageBox.error("There are no batches in the table to submit.");
-        return;
-    }
-
-    for (var i = 0; i < aScannedBatches.length; i++) {
-        var oBatch = aScannedBatches[i];
-
-        var fQtyToTransfer = parseFloat(oBatch.qty) || 0;
-        var fPendingQty = parseFloat(oBatch.pendingQty) || 0;
-
-        if (fQtyToTransfer > fPendingQty && !oSelection.isEndBits) {
-            MessageBox.error(
-                "Error on Batch " + oBatch.batch + ":\n\n" +
-                "Quantity to Transfer (" + fQtyToTransfer + ") cannot be greater than the Pending Quantity (" + fPendingQty + ")."
-            );
-            return;
-        }
-
-        if (fQtyToTransfer <= 0) {
-            MessageBox.error(
-                "Error on Batch " + oBatch.batch + ":\n\n" +
-                "Quantity to Transfer must be greater than zero."
-            );
-            return;
-        }
-    }
-
-    var oDateFormat = DateFormat.getDateInstance({ pattern: "yyyy-MM-dd" });
-    var sFormattedDate = oDateFormat.format(oSelection.postingDate);
-    var sSalesOrder = oSelection.salesOrder.padStart(10, '0');
-    var sSalesOrderItem = oSelection.salesOrderItem.padStart(6, '0');
-    var sProdOrder = oSelection.prodOrder.padStart(12, '0');
-
-    if (oSelection.deliveryDate > sFormattedDate) {
-        MessageBox.error("Select a valid posting date");
-        return;
-    }
-
-    var aItemsPayload = aScannedBatches.map(function (oBatch) {
-        return {
-            "Material": oBatch.material,
-            "Qty": String(oBatch.qty),
-            "Unit": oBatch.uom,
-            "Batch": oBatch.batch,
-            "ToBatch": oBatch.transferBatch,
-            "FromSalesOrder": sSalesOrder,
-            "FromSalesOrderItem": sSalesOrderItem,
-            "ProdOrder": sProdOrder,
-            "StorlocFrom": oBatch.fromSloc,
-            "StorlocTo": oSelection.toSloc,
-            "MatDes": oBatch.description,
-            "Plant": oSelection.plant,
-            "PostingDate": sFormattedDate
-        };
-    });
-
-    var oPayload = {
-        "ProdOrder": sProdOrder,
-        "Salesorder": sSalesOrder,
-        "Salesorderitem": sSalesOrderItem,
-        "Tosalesorder": sSalesOrder,
-        "Tosalesorderitem": sSalesOrderItem,
-        "Plant": oSelection.plant,
-        "PostingDate": sFormattedDate,
-        "StorlocFrom": oSelection.fromSloc,
-        "StorlocTo": oSelection.toSloc,
-        "Remark": oSelection.remark || "",
-        "_Item": aItemsPayload
-    };
-
-    oView.setBusy(true);
-
-    var oListBinding = oODataModel.bindList("/ZC_PRODBATCH_HD");
-    var oContext = oListBinding.create(oPayload);
-
-    oContext.created().then(function () {
-        oView.setBusy(false);
-
-        var sMatDoc = oContext.getProperty("MatDoc");
-        var sMess = oContext.getProperty("Mess");
-        var sPostingDate = oContext.getProperty("PostingDate");
-
-        if (sMatDoc && sMatDoc.trim() !== "") {
-            var sMessage = "Material Document " + sMatDoc + " with Posting Date " + sPostingDate + " created successfully!";
-
-            // Display persistent success dialog with Print and OK buttons
-            that._showSuccessDialog(sMessage, sProdOrder, sMatDoc, sFormattedDate);
-
-        } else {
-            var sBackendError = sMess ? sMess : "Backend failed to generate a Material Document.";
-            MessageBox.error("SAP Business Error: \n\n" + sBackendError);
-        }
-
-    }).catch(function (oError) {
-        oView.setBusy(false);
-        var sErrorMsg = "Failed to post Material Document due to a network/server error.";
-        if (oError && oError.message) {
-            sErrorMsg = oError.message;
-        }
-        MessageBox.error(sErrorMsg);
-    });
-},
-
-// ==========================================
-// PERSISTENT SUCCESS DIALOG (STAYS OPEN ON PRINT)
-// ==========================================
-_showSuccessDialog: function (sMessage, sProdOrder, sMatDoc, sFormattedDate) {
-    var that = this;
-
-    var oSuccessDialog = new sap.m.Dialog({
-        title: "Success",
-        type: "Message",
-        state: "Success",
-        content: new sap.m.Text({ text: sMessage }),
-        buttons: [
-            new sap.m.Button({
-                text: "Print",
-                press: function () {
-                    // Trigger PDF print without closing dialog
-                    that._onPrintPdf(sProdOrder, sMatDoc, sFormattedDate, oSuccessDialog);
-                }
-            }),
-            new sap.m.Button({
-                text: "OK",
-                type: "Emphasized",
-                press: function () {
-                    // Close dialog and reset form ONLY when user clicks OK
-                    oSuccessDialog.close();
-                    oSuccessDialog.destroy();
-                    that._resetForm();
-                }
-            })
-        ]
-    });
-
-    oSuccessDialog.open();
-},
-
-// ==========================================
-// RESET FORM HELPER
-// ==========================================
-_resetForm: function () {
-    var oView = this.getView();
-    var oLocalModel = oView.getModel("local");
-    var bIsEndBits = oLocalModel.getProperty("/selection/isEndBits");
-
-    oLocalModel.setProperty("/scannedBatches", []);
-    oLocalModel.setProperty("/selection/plant", "");
-    oLocalModel.setProperty("/selection/salesOrder", "");
-    oLocalModel.setProperty("/selection/salesOrderItem", "");
-    oLocalModel.setProperty("/selection/yieldQty", "");
-    oLocalModel.setProperty("/selection/fromSloc", "");
-    oLocalModel.setProperty("/selection/toSloc", "");
-    oLocalModel.setProperty("/selection/prodOrder", "");
-    oLocalModel.setProperty("/selection/materialDescription", "");
-    oLocalModel.setProperty("/selection/material", "");
-    oLocalModel.setProperty("/selection/lotNumber", "");
-    oLocalModel.setProperty("/selection/productGroup", "");
-
-    if (!bIsEndBits) {
-        oLocalModel.setProperty("/selection/remark", "");
-    }
-
-    var oPlantInput = oView.byId("inputPlant");
-    if (oPlantInput) {
-        oPlantInput.focus();
-    }
-},
-
-// ==========================================
-// FETCH PRINT PDF VIA ODATA
-// ==========================================
-_onPrintPdf: function (sProdOrder, sMatDoc, sPostingDate, oDialog) {
-    var that = this;
-    var oODataModel = this.getView().getModel();
-
-    var aFilters = [
-        new sap.ui.model.Filter("ManufacturingOrder", sap.ui.model.FilterOperator.EQ, sProdOrder),
-        new sap.ui.model.Filter("MaterialDocument", sap.ui.model.FilterOperator.EQ, sMatDoc),
-        new sap.ui.model.Filter("PostingDate", sap.ui.model.FilterOperator.EQ, sPostingDate)
-    ];
-
-    if (oDialog) {
-        oDialog.setBusy(true); // Show busy indicator on the dialog while fetching PDF
-    }
-
-    var oListBinding = oODataModel.bindList("/ZCE_SFG_TR_PRINT", null, null, aFilters);
-
-    oListBinding.requestContexts(0, 1).then(function (aContexts) {
-        if (oDialog) {
-            oDialog.setBusy(false);
-        }
-
-        if (aContexts && aContexts.length > 0) {
-            var oData = aContexts[0].getObject();
-            var sBase64 = oData.Base64;
-            var sMessage = oData.Message;
-
-            if (sBase64 && sBase64.trim() !== "") {
-                that._openPdfFromBase64(sBase64);
-            } else {
-                MessageBox.error(sMessage || "PDF generation failed or returned empty content.");
+                MessageBox.error("Please fill in all mandatory details before submitting.");
+                return;
             }
-        } else {
-            MessageBox.error("No print record found for Material Document " + sMatDoc);
-        }
-    }).catch(function (oError) {
-        if (oDialog) {
-            oDialog.setBusy(false);
-        }
-        var sErrorMsg = oError && oError.message ? oError.message : "Error fetching PDF content.";
-        MessageBox.error(sErrorMsg);
-    });
-},
 
-// ==========================================
-// DISPLAY / PRINT BASE64 PDF IN NEW TAB
-// ==========================================
-_openPdfFromBase64: function (sBase64) {
-    try {
-        var sCleanBase64 = sBase64.replace(/^data:application\/pdf;base64,/, "");
+            if (aScannedBatches.length === 0) {
+                MessageBox.error("There are no batches in the table to submit.");
+                return;
+            }
 
-        var byteCharacters = atob(sCleanBase64);
-        var byteNumbers = new Array(byteCharacters.length);
-        for (var i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        var byteArray = new Uint8Array(byteNumbers);
-        var oBlob = new Blob([byteArray], { type: "application/pdf" });
-        var sPdfUrl = URL.createObjectURL(oBlob);
+            for (var i = 0; i < aScannedBatches.length; i++) {
+                var oBatch = aScannedBatches[i];
 
-        var oPdfWindow = window.open(sPdfUrl, "_blank");
-        if (!oPdfWindow) {
-            MessageBox.error("Pop-up was blocked. Please allow pop-ups for this site to view/print the PDF.");
-        }
-    } catch (e) {
-        MessageBox.error("Failed to process PDF data: " + e.message);
-    }
-},
+                var fQtyToTransfer = parseFloat(oBatch.qty) || 0;
+                var fPendingQty = parseFloat(oBatch.pendingQty) || 0;
+
+                if (fQtyToTransfer > fPendingQty && !oSelection.isEndBits) {
+                    MessageBox.error(
+                        "Error on Batch " + oBatch.batch + ":\n\n" +
+                        "Quantity to Transfer (" + fQtyToTransfer + ") cannot be greater than the Pending Quantity (" + fPendingQty + ")."
+                    );
+                    return;
+                }
+
+                if (fQtyToTransfer <= 0) {
+                    MessageBox.error(
+                        "Error on Batch " + oBatch.batch + ":\n\n" +
+                        "Quantity to Transfer must be greater than zero."
+                    );
+                    return;
+                }
+            }
+
+            var oDateFormat = DateFormat.getDateInstance({ pattern: "yyyy-MM-dd" });
+            var sFormattedDate = oDateFormat.format(oSelection.postingDate);
+            var sSalesOrder = oSelection.salesOrder.padStart(10, '0');
+            var sSalesOrderItem = oSelection.salesOrderItem.padStart(6, '0');
+            var sProdOrder = oSelection.prodOrder.padStart(12, '0');
+
+            if (oSelection.deliveryDate > sFormattedDate) {
+                MessageBox.error("Select a valid posting date");
+                return;
+            }
+
+            var aItemsPayload = aScannedBatches.map(function (oBatch) {
+                return {
+                    "Material": oBatch.material,
+                    "Qty": String(oBatch.qty),
+                    "Unit": oBatch.uom,
+                    "Batch": oBatch.batch,
+                    "ToBatch": oBatch.transferBatch,
+                    "FromSalesOrder": sSalesOrder,
+                    "FromSalesOrderItem": sSalesOrderItem,
+                    "ProdOrder": sProdOrder,
+                    "StorlocFrom": oBatch.fromSloc,
+                    "StorlocTo": oSelection.toSloc,
+                    "work_center": oSelection.workCenter,
+                    "MatDes": oBatch.description,
+                    "Plant": oSelection.plant,
+                    "PostingDate": sFormattedDate
+                };
+            });
+
+            var oPayload = {
+                "ProdOrder": sProdOrder,
+                "Salesorder": sSalesOrder,
+                "Salesorderitem": sSalesOrderItem,
+                "Tosalesorder": sSalesOrder,
+                "Tosalesorderitem": sSalesOrderItem,
+                "Plant": oSelection.plant,
+                "PostingDate": sFormattedDate,
+                "StorlocFrom": oSelection.fromSloc,
+                "StorlocTo": oSelection.toSloc,
+                "work_center": oSelection.workCenter,
+                "Remark": oSelection.remark || "",
+                "_Item": aItemsPayload
+            };
+
+            oView.setBusy(true);
+
+            var oListBinding = oODataModel.bindList("/ZC_PRODBATCH_HD");
+            var oContext = oListBinding.create(oPayload);
+
+            oContext.created().then(function () {
+                oView.setBusy(false);
+
+                var sMatDoc = oContext.getProperty("MatDoc");
+                var sMess = oContext.getProperty("Mess");
+                var sPostingDate = oContext.getProperty("PostingDate");
+
+                if (sMatDoc && sMatDoc.trim() !== "") {
+                    var sMessage = "Material Document " + sMatDoc + " with Posting Date " + sPostingDate + " created successfully!";
+
+                    // Display persistent success dialog with Print and OK buttons
+                    that._showSuccessDialog(sMessage, sProdOrder, sMatDoc, sFormattedDate);
+
+                } else {
+                    var sBackendError = sMess ? sMess : "Backend failed to generate a Material Document.";
+                    MessageBox.error("SAP Business Error: \n\n" + sBackendError);
+                }
+
+            }).catch(function (oError) {
+                oView.setBusy(false);
+                var sErrorMsg = "Failed to post Material Document due to a network/server error.";
+                if (oError && oError.message) {
+                    sErrorMsg = oError.message;
+                }
+                MessageBox.error(sErrorMsg);
+            });
+        },
+
+        // ==========================================
+        // PERSISTENT SUCCESS DIALOG (STAYS OPEN ON PRINT)
+        // ==========================================
+        _showSuccessDialog: function (sMessage, sProdOrder, sMatDoc, sFormattedDate) {
+            var that = this;
+
+            var oSuccessDialog = new sap.m.Dialog({
+                title: "Success",
+                type: "Message",
+                state: "Success",
+                content: new sap.m.Text({ text: sMessage }),
+                buttons: [
+                    new sap.m.Button({
+                        text: "Print",
+                        press: function () {
+                            // Trigger PDF print without closing dialog
+                            that._onPrintPdf(sProdOrder, sMatDoc, sFormattedDate, oSuccessDialog);
+                        }
+                    }),
+                    new sap.m.Button({
+                        text: "OK",
+                        type: "Emphasized",
+                        press: function () {
+                            // Close dialog and reset form ONLY when user clicks OK
+                            oSuccessDialog.close();
+                            oSuccessDialog.destroy();
+                            that._resetForm();
+                        }
+                    })
+                ]
+            });
+
+            oSuccessDialog.open();
+        },
+
+        // ==========================================
+        // RESET FORM HELPER
+        // ==========================================
+        _resetForm: function () {
+            var oView = this.getView();
+            var oLocalModel = oView.getModel("local");
+            var bIsEndBits = oLocalModel.getProperty("/selection/isEndBits");
+
+            oLocalModel.setProperty("/scannedBatches", []);
+            oLocalModel.setProperty("/selection/plant", "");
+            oLocalModel.setProperty("/selection/salesOrder", "");
+            oLocalModel.setProperty("/selection/salesOrderItem", "");
+            oLocalModel.setProperty("/selection/yieldQty", "");
+            oLocalModel.setProperty("/selection/fromSloc", "");
+            oLocalModel.setProperty("/selection/toSloc", "");
+            oLocalModel.setProperty("/selection/workCenter", "");
+            oLocalModel.setProperty("/selection/prodOrder", "");
+            oLocalModel.setProperty("/selection/materialDescription", "");
+            oLocalModel.setProperty("/selection/material", "");
+            oLocalModel.setProperty("/selection/lotNumber", "");
+            oLocalModel.setProperty("/selection/productGroup", "");
+
+            if (!bIsEndBits) {
+                oLocalModel.setProperty("/selection/remark", "");
+            }
+
+            var oPlantInput = oView.byId("inputPlant");
+            if (oPlantInput) {
+                oPlantInput.focus();
+            }
+        },
+
+        // ==========================================
+        // FETCH PRINT PDF VIA ODATA
+        // ==========================================
+        _onPrintPdf: function (sProdOrder, sMatDoc, sPostingDate, oDialog) {
+            var that = this;
+            var oODataModel = this.getView().getModel();
+
+            var aFilters = [
+                new sap.ui.model.Filter("ManufacturingOrder", sap.ui.model.FilterOperator.EQ, sProdOrder),
+                new sap.ui.model.Filter("MaterialDocument", sap.ui.model.FilterOperator.EQ, sMatDoc),
+                new sap.ui.model.Filter("PostingDate", sap.ui.model.FilterOperator.EQ, sPostingDate)
+            ];
+
+            if (oDialog) {
+                oDialog.setBusy(true); // Show busy indicator on the dialog while fetching PDF
+            }
+
+            var oListBinding = oODataModel.bindList("/ZCE_SFG_TR_PRINT", null, null, aFilters);
+
+            oListBinding.requestContexts(0, 1).then(function (aContexts) {
+                if (oDialog) {
+                    oDialog.setBusy(false);
+                }
+
+                if (aContexts && aContexts.length > 0) {
+                    var oData = aContexts[0].getObject();
+                    var sBase64 = oData.Base64;
+                    var sMessage = oData.Message;
+
+                    if (sBase64 && sBase64.trim() !== "") {
+                        that._openPdfFromBase64(sBase64);
+                    } else {
+                        MessageBox.error(sMessage || "PDF generation failed or returned empty content.");
+                    }
+                } else {
+                    MessageBox.error("No print record found for Material Document " + sMatDoc);
+                }
+            }).catch(function (oError) {
+                if (oDialog) {
+                    oDialog.setBusy(false);
+                }
+                var sErrorMsg = oError && oError.message ? oError.message : "Error fetching PDF content.";
+                MessageBox.error(sErrorMsg);
+            });
+        },
+
+        // ==========================================
+        // DISPLAY / PRINT BASE64 PDF IN NEW TAB
+        // ==========================================
+        _openPdfFromBase64: function (sBase64) {
+            try {
+                var sCleanBase64 = sBase64.replace(/^data:application\/pdf;base64,/, "");
+
+                var byteCharacters = atob(sCleanBase64);
+                var byteNumbers = new Array(byteCharacters.length);
+                for (var i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                var byteArray = new Uint8Array(byteNumbers);
+                var oBlob = new Blob([byteArray], { type: "application/pdf" });
+                var sPdfUrl = URL.createObjectURL(oBlob);
+
+                var oPdfWindow = window.open(sPdfUrl, "_blank");
+                if (!oPdfWindow) {
+                    MessageBox.error("Pop-up was blocked. Please allow pop-ups for this site to view/print the PDF.");
+                }
+            } catch (e) {
+                MessageBox.error("Failed to process PDF data: " + e.message);
+            }
+        },
 
         // ==========================================
         // EXPORT TO EXCEL LOGIC
         // ==========================================
-// ==========================================
+        // ==========================================
         // EXPORT TO EXCEL LOGIC
         // ==========================================
         onExportExcel: function () {
             var oView = this.getView();
             var oLocalModel = oView.getModel("local");
             var aScannedBatches = oLocalModel.getProperty("/scannedBatches");
-            
+
             // 1. Get the End Bits toggle state
             var bIsEndBits = oLocalModel.getProperty("/selection/isEndBits");
 
@@ -1082,7 +1169,7 @@ _openPdfFromBase64: function (sBase64) {
             var sFromSloc = oLocalModel.getProperty("/selection/fromSloc") || "";
             var sSalesOrder = oLocalModel.getProperty("/selection/salesOrder") || "";
             var sSalesOrderItem = oLocalModel.getProperty("/selection/salesOrderItem") || "";
-            var sLotNumber = oLocalModel.getProperty("/selection/lotNumber") || ""; 
+            var sLotNumber = oLocalModel.getProperty("/selection/lotNumber") || "";
 
             var aExportData = aScannedBatches.map(function (oBatch) {
                 var oExportRow = Object.assign({}, oBatch);
@@ -1090,11 +1177,11 @@ _openPdfFromBase64: function (sBase64) {
                 oExportRow.fromSloc = sFromSloc;
                 oExportRow.salesOrder = sSalesOrder;
                 oExportRow.salesOrderItem = sSalesOrderItem;
-                
+
                 if (bIsEndBits) {
                     oExportRow.lotNumber = sLotNumber;
                 }
-                
+
                 return oExportRow;
             });
 

@@ -47,7 +47,6 @@
                                 text="End bits Transfer"
                                 design="Bold"
                                 class="sapThemeWarningText"
-                                
                             />
                             <Switch
                                 id="switchEndBits"
@@ -56,7 +55,6 @@
                                 customTextOn="Yes"
                                 customTextOff="No"
                             />
-
 
                             <Label
                                 id="_IDGenLabelProdOrder"
@@ -200,6 +198,29 @@
                                         text="{StorageLocation}"
                                         additionalText="{StorageLocationName}"
                                         key="{StorageLocation}"
+                                    />
+                                </suggestionItems>
+                            </Input>
+                            <Label
+                                id="_IDGenLabelWorkCenter"
+                                text="Work Center"
+                            />
+                            <Input
+                                id="inputWorkCenter"
+                                value="{local>/selection/workCenter}"
+                                showValueHelp="true"
+                                showSuggestion="true"
+                                suggest=".onWorkCenterSuggest"
+                                suggestionItems="{ path: '/Zvh_workcenter', templateShareable: false }"
+                                valueHelpRequest=".onWorkCenterValueHelp"
+                                placeholder="Select Work Center"
+                            >
+                                <suggestionItems>
+                                    <core:ListItem
+                                        id="_IDGenListItemWorkCenter"
+                                        text="{WorkCenter}"
+                                        additionalText="{WorkCenterText}"
+                                        key="{WorkCenter}"
                                     />
                                 </suggestionItems>
                             </Input>
